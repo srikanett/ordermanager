@@ -1,6 +1,6 @@
 // ===== ระบบจัดการออร์เดอร์ - JavaScript =====
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/usercontent'; // แก้ไข YOUR_SCRIPT_ID
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTPamrpFokJCO5n9Is87uaoY2wh9jClS8VSWE8-NsKzHpiV-p2A0GixeLcltya2Ww7/exec'; // แก้ไข YOUR_SCRIPT_ID
 const APP_URL = window.location.origin + window.location.pathname;
 
 // Global State
