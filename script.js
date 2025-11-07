@@ -1,7 +1,7 @@
 // ===== ระบบจัดการออร์เดอร์ - JavaScript (Complete & Tested) =====
 
 // ⚠️ IMPORTANT: เปลี่ยนเป็น URL ของคุณ
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3hclau08WNu6gGJ2Zzze-oY2wLoZ6mwUezborW4VeRrGF9kzQYnXFXMNIQxxvfPJJ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlKorS2Kh5ohqIZeSm-NVic-T3Po5HpWVKNAtDRIDwZLPFGxzWEbfHkRc-aS2Eef5b/exec';
 const APP_URL = window.location.origin + window.location.pathname;
 
 // Global State
@@ -127,24 +127,20 @@ async function uploadFileToDrive(file, folderId, fileName) {
     }
 }
 
-// ===== GAS FETCH (FIXED - NO no-cors) =====
+// ===== GAS FETCH (FIXED - CORS Preflight 405) =====
 
 async function gasFetch(action, payload) {
     try {
         console.log('📤 Sending:', action, payload);
         
-        // ✅ ลบ mode: 'no-cors' ออก - เป็นสาเหตุ Empty Response
+        // ✅ ลบ headers ทั้งหมด - ป้องกัน CORS preflight 405 error
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({ action, payload })
         });
         
         console.log('📥 Response status:', response.status);
         
-        // ✅ ตอนนี้ response จะไม่ opaque สามารถอ่านได้
         const text = await response.text();
         console.log('📊 Response text:', text);
         
