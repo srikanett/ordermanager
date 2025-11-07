@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการออร์เดอร์ - ศรีคเนศ เทวาลัย</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Glassmorphism Theme --- */
+        :root {
+            --text-primary: #F5F5F7;
+            --text-secondary: rgba(245, 245, 247, 0.8);
+            --text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            --glass-background: rgba(50, 50, 46, 0.15);
+            --glass-backdrop-blur: 40px;
+            --glass-border-color: rgba(255, 255, 255, 0.3);
+            --glass-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+            
+            --primary-gradient: linear-gradient(to right, #BA4297, #E95384);
+            --primary-shadow-color: rgba(233, 83, 132, 0.4);
+            --accent-color: #FF9F5D;
+            --status-error: #FF746E;
+            --status-success: #FFCC5A;
+            --focus-ring-color: rgba(233, 83, 132, 0.8);
+        }
+
+        body {
+            background-color: #1A1A2E;
+            color: var(--text-primary);
+            font-family: 'Inter', 'Noto Sans Thai', 'Thonburi', sans-serif;
+            text-shadow: var(--text-shadow);
+            position: relative;
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            opacity: 0.4;
+            filter: blur(100px);
+            z-index: -1;
+        }
+
+        body::before {
+            background: radial-gradient(circle, #E95384, #BA4297, #780068);
+            animation: aurora-one 15s infinite linear;
+        }
+
+        body::after {
+            background: radial-gradient(circle, #FFCC5A, #FF9F5D, #FF746E);
+            animation: aurora-two 17s infinite linear;
+        }
+
+        @keyframes aurora-one {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            50% { transform: translate(-30%, -70%) rotate(180deg) scale(1.2); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+        }
+
+        @keyframes aurora-two {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1.2); }
+            50% { transform: translate(-70%, -30%) rotate(-180deg) scale(1); }
+            100% { transform: translate(-50%, -50%) rotate(-360deg) scale(1.2); }
+        }
+
+        .glass-panel {
+            background: var(--glass-background);
+            backdrop-filter: blur(var(--glass-backdrop-blur));
+            border: 1px solid var(--glass-border-color);
+            box-shadow: var(--glass-box-shadow);
+            border-radius: 1.5rem;
+        }
+        
+        .table-frame {
+            background: rgba(50, 50, 46, 0.35);
+            border: 1px solid var(--glass-border-color);
+            border-radius: 0.375rem;
+            overflow: hidden;
+            max-height: 400px;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .table-header {
+            background-color: rgba(35, 35, 45, 1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-header th {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            color: var(--text-primary);
+        }
+        
+        .table-row-dark { background-color: rgba(255, 255, 255, 0.05); }
+        .table-row-light { background-color: transparent; }
+
+        tbody tr {
+            transition: all 0.2s ease-out;
+        }
+        
+        tbody tr td {
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            vertical-align: middle;
+        }
+        
+        tbody tr:last-child td { border-bottom: none; }
+
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.01);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 5;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 2.5rem;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            text-shadow: var(--text-shadow);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.875rem; }
+        .btn-icon { padding: 0.6rem; border-radius: 50%; width: 40px; height: 40px; }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 20px 0 var(--primary-shadow-color);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px 0 var(--primary-shadow-color); }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid var(--glass-border-color);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.25); border-color: rgba(255, 255, 255, 0.5); }
+        
+        .btn-error {
+            background: var(--status-error);
+            color: white;
+            box-shadow: 0 4px 20px 0 rgba(255, 116, 110, 0.4);
+        }
+        .btn-error:hover { transform: translateY(-2px); background-color: #ff5a54; box-shadow: 0 6px 25px 0 rgba(255, 116, 110, 0.6); }
+        
+        .btn-success {
+            background: var(--status-success);
+            color: #333;
+            box-shadow: 0 4px 20px 0 rgba(255, 204, 90, 0.4);
+        }
+        .btn-success:hover { transform: translateY(-2px); background-color: #ffdC7a; }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 2.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 2px 10px rgba(255, 159, 93, 0.4);
+        }
+        
+        .input-glass, .select-glass, .textarea-glass {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--glass-border-color);
+            color: var(--text-primary);
+            border-radius: 1.5rem;
+            padding: 0.75rem 1.25rem;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        
+        .textarea-glass { border-radius: 1.25rem; min-height: 100px; }
+        
+        .input-glass::placeholder, .textarea-glass::placeholder { color: var(--text-secondary); }
+
+        .input-glass:focus, .select-glass:focus, .textarea-glass:focus {
+            outline: none;
+            border-color: var(--focus-ring-color);
+            box-shadow: 0 0 0 2px rgba(233, 83, 132, 0.2);
+        }
+        
+        .select-glass-wrapper {
+            position: relative;
+        }
+        .select-glass-wrapper::after {
+            content: '▼';
+            color: var(--text-primary);
+            position: absolute;
+            right: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 0.8rem;
+        }
+        .select-glass {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+        
+        .spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            padding: 1.1px;
+            background: conic-gradient(#0000 10%, var(--accent-color)) content-box;
+            -webkit-mask: repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
+                radial-gradient(farthest-side, #0000 calc(100% - 9px), #000 calc(100% - 8px));
+            -webkit-mask-composite: destination-in;
+            mask-composite: intersect;
+            animation: spinner-d5527z 1s infinite steps(10);
+        }
+
+        @keyframes spinner-d5527z {
+            to { transform: rotate(1turn); }
+        }
+        
+        .table-frame::-webkit-scrollbar, .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .table-frame::-webkit-scrollbar-track, .modal-body::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .table-frame::-webkit-scrollbar-thumb, .modal-body::-webkit-scrollbar-thumb {
+            background: var(--glass-border-color);
+            border-radius: 4px;
+        }
+        .table-frame::-webkit-scrollbar-thumb:hover, .modal-body::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+        
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            z-index: 50;
+            width: 100%;
+            max-width: 90vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-body {
+            overflow-y: auto;
+        }
+        
+        .autocomplete-container {
+            position: relative;
+        }
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid var(--glass-border-color);
+            background: #1A1A2E;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0 0 1rem 1rem;
+            margin-top: -1rem;
+            padding-top: 1rem;
+        }
+        .autocomplete-items div {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: background-color 0.2s;
+        }
+        .autocomplete-items div:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .autocomplete-active {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+        }
+        
+        [hidden] {
+            display: none !important;
+        }
+        
+        .styled-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border-color);
+            border-radius: 0.375rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            vertical-align: middle;
+        }
+        .styled-checkbox:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .styled-checkbox:checked::after {
+            content: '✔';
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        #print-preview-iframe {
+            width: 100%;
+            height: 60vh;
+            border: 1px solid var(--glass-border-color);
+            border-radius: 0.5rem;
+            background: white;
+        }
+        
+        .swal2-popup {
+            background: var(--glass-background) !important;
+            backdrop-filter: blur(var(--glass-backdrop-blur)) !important;
+            border: 1px solid var(--glass-border-color) !important;
+            box-shadow: var(--glass-box-shadow) !important;
+            border-radius: 1.5rem !important;
+            color: var(--text-primary) !important;
+        }
+        .swal2-title {
+            color: var(--text-primary) !important;
+        }
+        .swal2-html-container {
+            color: var(--text-secondary) !important;
+        }
+        .swal2-confirm {
+            background: var(--primary-gradient) !important;
+            box-shadow: 0 4px 20px 0 var(--primary-shadow-color) !important;
+            border-radius: 2.5rem !important;
+            padding: 0.75rem 1.5rem !important;
+            font-weight: 600 !important;
+        }
+        .swal2-cancel {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid var(--glass-border-color) !important;
+            color: var(--text-primary) !important;
+            border-radius: 2.5rem !important;
+            padding: 0.75rem 1.5rem !important;
+            font-weight: 600 !important;
+        }
+        .swal2-input, .swal2-textarea, .swal2-select {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 2px solid var(--glass-border-color) !important;
+            color: var(--text-primary) !important;
+            border-radius: 1.5rem !important;
+        }
+        .swal2-input:focus, .swal2-textarea:focus, .swal2-select:focus {
+             border-color: var(--focus-ring-color) !important;
+             box-shadow: 0 0 0 2px rgba(233, 83, 132, 0.2) !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+
+    <!-- Status Overlay -->
+    <div id="status-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div id="progress-indicator" class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-8">
+            <div class="spinner"></div>
+            <div class="text-center sm:text-left">
+                <h3 id="progress-title" class="text-xl font-bold text-white">กำลังโหลด...</h3>
+                <p id="progress-text" class="text-sm text-white/80">โปรดรอสักครู่</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div id="app-container" class="glass-panel w-full max-w-7xl p-6 sm:p-10 shadow-2xl max-h-[95vh] flex flex-col">
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" class="flex flex-col h-full overflow-hidden" hidden>
+            <div class="flex-shrink-0 mb-6">
+                <h1 class="text-3xl font-bold text-white">ระบบจัดการออร์เดอร์ - ศรีคเนศ เทวาลัย</h1>
+                
+                <div class="mt-6 border-b border-white/20">
+                    <nav class="flex flex-wrap -mb-px gap-6">
+                        <button id="tab-btn-orders" class="tab-btn active text-lg" data-target="order-mgmt-content">
+                            จัดการออร์เดอร์
+                        </button>
+                        <button id="tab-btn-data" class="tab-btn text-lg" data-target="data-mgmt-content">
+                            จัดการสินค้าและลูกค้า
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="flex-grow overflow-y-auto">
+                <!-- Order Management -->
+                <div id="order-mgmt-content" class="space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-2 border border-white/20 p-1 rounded-full">
+                            <button id="order-subtab-btn-manage" class="tab-btn btn-sm active" data-target="order-subtab-manage">
+                                ✓ จัดการข้อมูล
+                            </button>
+                            <button id="order-subtab-btn-print" class="tab-btn btn-sm" data-target="order-subtab-print">
+                                🖨️ พิมพ์
+                            </button>
+                        </div>
+                        
+                        <div id="order-manage-buttons" class="flex flex-wrap gap-2">
+                             <button id="btn-add-order" class="btn btn-primary">+ เพิ่มออร์เดอร์</button>
+                            <button id="btn-bulk-delete-order" class="btn btn-error hidden">ลบที่เลือก (0)</button>
+                            <button id="btn-bulk-close-order" class="btn btn-success hidden">ปิดงาน (0)</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Manage Tab -->
+                    <div id="order-subtab-manage">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <input type="text" id="order-search" class="input-glass" placeholder="ค้นหา (ID, ชื่อ, เบอร์...)">
+                            <div class="select-glass-wrapper">
+                                <select id="order-status-filter" class="select-glass">
+                                    <option value="all">แสดงทุกสถานะ</option>
+                                    <option value="สร้างออร์เดอร์">สร้างออร์เดอร์</option>
+                                    <option value="รอตรวจสอบ">รอตรวจสอบ</option>
+                                    <option value="รอจัดส่ง">รอจัดส่ง</option>
+                                    <option value="สำเร็จ">สำเร็จ</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="table-frame">
+                            <table class="w-full">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="w-10"><input type="checkbox" id="order-select-all" class="styled-checkbox"></th>
+                                        <th>OrderID</th>
+                                        <th>ชื่อ</th>
+                                        <th>ยอด</th>
+                                        <th>สถานะ</th>
+                                        <th>จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="order-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="order-table-empty" class="text-center p-8 hidden" style="color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                    </div>
+                    
+                    <!-- Print Tab -->
+                    <div id="order-subtab-print" hidden>
+                        <div class="flex flex-wrap gap-4 mb-4">
+                            <div class="select-glass-wrapper flex-grow">
+                                <select id="print-sheet-select" class="select-glass"></select>
+                            </div>
+                            <div class="select-glass-wrapper flex-grow">
+                                <select id="print-data-type-filter" class="select-glass">
+                                    <option value="all">ทั้งหมด</option>
+                                    <option value="orderOnly">เฉพาะออร์เดอร์</option>
+                                </select>
+                            </div>
+                            <div class="select-glass-wrapper flex-grow">
+                                <select id="print-status-filter" class="select-glass">
+                                    <option value="all">ทุกสถานะ</option>
+                                    <option value="สร้างออร์เดอร์">สร้าง</option>
+                                    <option value="รอตรวจสอบ">รอตรวจสอบ</option>
+                                    <option value="รอจัดส่ง">รอจัดส่ง</option>
+                                    <option value="สำเร็จ">สำเร็จ</option>
+                                </select>
+                            </div>
+                        </div>
+                         <div class="flex flex-wrap gap-4 mb-4">
+                            <button id="btn-label-settings" class="btn btn-secondary">⚙️ ตั้งค่า</button>
+                             <button id="btn-bulk-print" class="btn btn-primary" disabled>พิมพ์ (0)</button>
+                        </div>
+                        
+                        <div class="table-frame">
+                            <table class="w-full">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="w-10"><input type="checkbox" id="print-select-all" class="styled-checkbox"></th>
+                                        <th>ID</th>
+                                        <th>ชื่อ</th>
+                                        <th>ยอด</th>
+                                        <th>ประเภท</th>
+                                        <th>จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="print-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="print-table-empty" class="text-center p-8 hidden" style="color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                    </div>
+                </div>
+
+                <!-- Data Management -->
+                <div id="data-mgmt-content" class="space-y-6" hidden>
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-2 border border-white/20 p-1 rounded-full">
+                            <button id="data-subtab-btn-customer" class="tab-btn btn-sm active" data-target="data-subtab-customer">
+                                👥 ลูกค้า
+                            </button>
+                            <button id="data-subtab-btn-product" class="tab-btn btn-sm" data-target="data-subtab-product">
+                                📦 สินค้า
+                            </button>
+                        </div>
+                        
+                        <div id="customer-manage-buttons" class="flex flex-wrap gap-2">
+                             <button id="btn-add-customer" class="btn btn-primary">+ เพิ่มลูกค้า</button>
+                            <button id="btn-bulk-delete-customer" class="btn btn-error hidden">ลบ (0)</button>
+                        </div>
+                        
+                        <div id="product-manage-buttons" class="flex flex-wrap gap-2" hidden>
+                             <button id="btn-add-product" class="btn btn-primary">+ เพิ่มสินค้า</button>
+                            <button id="btn-bulk-delete-product" class="btn btn-error hidden">ลบ (0)</button>
+                        </div>
+                    </div>
+
+                    <!-- Customer Tab -->
+                    <div id="data-subtab-customer">
+                        <input type="text" id="customer-search" class="input-glass mb-4" placeholder="ค้นหา...">
+                        <div class="table-frame">
+                            <table class="w-full">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="w-10"><input type="checkbox" id="customer-select-all" class="styled-checkbox"></th>
+                                        <th>ID</th>
+                                        <th>ชื่อ</th>
+                                        <th>เบอร์</th>
+                                        <th>วันเกิด</th>
+                                        <th>จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customer-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="customer-table-empty" class="text-center p-8 hidden" style="color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                    </div>
+                    
+                    <!-- Product Tab -->
+                    <div id="data-subtab-product" hidden>
+                        <input type="text" id="product-search" class="input-glass mb-4" placeholder="ค้นหา...">
+                        <div class="table-frame">
+                            <table class="w-full">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="w-10"><input type="checkbox" id="product-select-all" class="styled-checkbox"></th>
+                                        <th>ID</th>
+                                        <th>รูป</th>
+                                        <th>ชื่อสินค้า</th>
+                                        <th>ราคา</th>
+                                        <th>จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="product-table-body"></tbody>
+                            </table>
+                        </div>
+                         <div id="product-table-empty" class="text-center p-8 hidden" style="color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customer Form -->
+        <div id="customer-form-container" class="w-full max-w-2xl mx-auto" hidden>
+            <h1 class="text-3xl font-bold text-white mb-2 text-center">ยืนยันออร์เดอร์</h1>
+            <p class="text-lg mb-6 text-center" style="color: var(--text-secondary);">กรุณาตรวจสอบและส่งข้อมูล</p>
+            
+            <div class="mb-6 p-6 rounded-2xl" style="background: rgba(50, 50, 46, 0.35);">
+                <h2 class="text-xl font-semibold mb-4 text-white">รายการ (Order: <span id="customer-order-id"></span>)</h2>
+                <div id="customer-item-list" class="space-y-2 mb-4"></div>
+                <hr class="border-white/20 my-4">
+                <div class="flex justify-between items-center text-xl font-bold">
+                    <span>รวม:</span>
+                    <span id="customer-total-price" style="color: var(--status-success);"></span>
+                </div>
+            </div>
+            
+            <h2 class="text-xl font-semibold mb-4 text-white">ข้อมูลจัดส่งและชำระเงิน</h2>
+            <form id="customer-form" class="space-y-4">
+                <div>
+                    <label for="customer-name" class="block mb-2 text-sm font-medium" style="color: var(--text-secondary);">ชื่อ-นามสกุล</label>
+                    <input type="text" id="customer-name" class="input-glass" placeholder="กรุณากรอก..." required>
+                </div>
+                <div>
+                    <label for="customer-address" class="block mb-2 text-sm font-medium" style="color: var(--text-secondary);">ที่อยู่</label>
+                    <textarea id="customer-address" class="textarea-glass" placeholder="บ้าน/ถนน/ตำบล/อำเภอ/จังหวัด" required></textarea>
+                </div>
+                <div>
+                    <label for="customer-phone" class="block mb-2 text-sm font-medium" style="color: var(--text-secondary);">เบอร์โทร</label>
+                    <input type="tel" id="customer-phone" class="input-glass" placeholder="0xxxxxxxxx" required>
+                </div>
+                <div>
+                    <label for="customer-slip" class="block mb-2 text-sm font-medium" style="color: var(--text-secondary);">อัปโหลดสลิป</label>
+                    <input type="file" id="customer-slip" class="input-glass" accept="image/*" required>
+                    <img id="slip-preview" class="mt-4 rounded-lg hidden max-w-xs mx-auto" alt="Slip"/>
+                </div>
+                <button type="submit" id="customer-submit-btn" class="btn btn-primary w-full !py-4 !text-lg">
+                    ยืนยันการสั่งซื้อ
+                </button>
+            </form>
+        </div>
+
+    </div>
+    
+    <!-- MODALS -->
+    
+    <!-- Order Modal -->
+    <div id="order-modal" class="modal-backdrop hidden">
+        <div class="glass-panel modal-content max-w-3xl">
+            <div class="flex justify-between items-center p-6 border-b border-white/20 flex-shrink-0">
+                <h2 id="order-modal-title" class="text-2xl font-bold">เพิ่มออร์เดอร์</h2>
+                <button class="btn-icon btn-secondary" onclick="document.getElementById('order-modal').classList.add('hidden')">✕</button>
+            </div>
+            <div class="p-6 space-y-4 modal-body">
+                <form id="order-form">
+                    <input type="hidden" id="order-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium">OrderID</label>
+                            <input type="text" id="order-id-display" class="input-glass" disabled>
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium">วันที่/เวลา</label>
+                            <input type="text" id="order-date" class="input-glass">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="autocomplete-container md:col-span-1">
+                            <label for="order-customer-name" class="block mb-2 text-sm font-medium">ชื่อลูกค้า</label>
+                            <input type="text" id="order-customer-name" class="input-glass" placeholder="พิมพ์...">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="order-customer-address" class="block mb-2 text-sm font-medium">ที่อยู่</label>
+                            <input type="text" id="order-customer-address" class="input-glass">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="order-customer-phone" class="block mb-2 text-sm font-medium">เบอร์โทร</label>
+                        <input type="tel" id="order-customer-phone" class="input-glass">
+                    </div>
+                    
+                    <hr class="border-white/20 my-4">
+                    <h3 class="text-lg font-semibold mb-2">รายการสินค้า</h3>
+                    <div id="order-item-list" class="space-y-3">
+                        <div class="grid grid-cols-12 gap-2" data-item-index="1">
+                            <div class="autocomplete-container col-span-8">
+                                <input type="text" class="input-glass order-item-name" placeholder="สินค้า 1">
+                            </div>
+                            <div class="col-span-4">
+                                <input type="number" class="input-glass order-item-price" placeholder="ราคา">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2" data-item-index="2" hidden>
+                            <div class="autocomplete-container col-span-8">
+                                <input type="text" class="input-glass order-item-name" placeholder="สินค้า 2">
+                            </div>
+                            <div class="col-span-4">
+                                <input type="number" class="input-glass order-item-price" placeholder="ราคา">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2" data-item-index="3" hidden>
+                            <div class="autocomplete-container col-span-8">
+                                <input type="text" class="input-glass order-item-name" placeholder="สินค้า 3">
+                            </div>
+                            <div class="col-span-4">
+                                <input type="number" class="input-glass order-item-price" placeholder="ราคา">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2" data-item-index="4" hidden>
+                            <div class="autocomplete-container col-span-8">
+                                <input type="text" class="input-glass order-item-name" placeholder="สินค้า 4">
+                            </div>
+                            <div class="col-span-4">
+                                <input type="number" class="input-glass order-item-price" placeholder="ราคา">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2" data-item-index="5" hidden>
+                            <div class="autocomplete-container col-span-8">
+                                <input type="text" class="input-glass order-item-name" placeholder="สินค้า 5">
+                            </div>
+                            <div class="col-span-4">
+                                <input type="number" class="input-glass order-item-price" placeholder="ราคา">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="border-white/20 my-4">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="order-total-price" class="block mb-2 text-sm font-medium">ยอดรวม</label>
+                            <input type="number" id="order-total-price" class="input-glass" placeholder="อัตโนมัติ">
+                        </div>
+                         <div>
+                            <label for="order-status" class="block mb-2 text-sm font-medium">สถานะ</label>
+                            <div class="select-glass-wrapper">
+                                <select id="order-status" class="select-glass">
+                                    <option value="สร้างออร์เดอร์">สร้าง</option>
+                                    <option value="รอตรวจสอบ">รอตรวจสอบ</option>
+                                    <option value="รอจัดส่ง">รอจัดส่ง</option>
+                                    <option value="สำเร็จ">สำเร็จ</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block mb-2 text-sm font-medium">ลิงค์ลูกค้า</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="order-customer-link" class="input-glass" readonly>
+                            <button type="button" id="btn-copy-link" class="btn btn-secondary">คัดลอก</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-6 border-t border-white/20 flex-shrink-0 text-right space-x-4">
+                <button type="button" id="btn-save-order" class="btn btn-primary">บันทึก</button>
+                <button type="button" onclick="document.getElementById('order-modal').classList.add('hidden')" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customer Modal -->
+    <div id="customer-modal" class="modal-backdrop hidden">
+        <div class="glass-panel modal-content max-w-lg">
+            <div class="flex justify-between items-center p-6 border-b border-white/20">
+                <h2 id="customer-modal-title" class="text-2xl font-bold">เพิ่มลูกค้า</h2>
+                <button class="btn-icon btn-secondary" onclick="document.getElementById('customer-modal').classList.add('hidden')">✕</button>
+            </div>
+            <div class="p-6 space-y-4 modal-body">
+                <form id="customer-form-modal" class="space-y-4">
+                    <input type="hidden" id="customer-id">
+                    <div>
+                        <label for="customer-name-modal" class="block mb-2 text-sm font-medium">ชื่อ-นามสกุล</label>
+                        <input type="text" id="customer-name-modal" class="input-glass" placeholder="ชื่อ...">
+                    </div>
+                    <div>
+                        <label for="customer-address-modal" class="block mb-2 text-sm font-medium">ที่อยู่</label>
+                        <textarea id="customer-address-modal" class="textarea-glass" placeholder="ที่อยู่..."></textarea>
+                    </div>
+                    <div>
+                        <label for="customer-phone-modal" class="block mb-2 text-sm font-medium">เบอร์โทร</label>
+                        <input type="tel" id="customer-phone-modal" class="input-glass" placeholder="0xxxxxxxxx">
+                    </div>
+                    <div>
+                        <label for="customer-birthday-modal" class="block mb-2 text-sm font-medium">วันเกิด</label>
+                        <input type="text" id="customer-birthday-modal" class="input-glass" placeholder="เช่น 14 พฤษภาคม พ.ศ. 2536">
+                    </div>
+                </form>
+            </div>
+            <div class="p-6 border-t border-white/20 text-right space-x-4">
+                <button type="button" id="btn-save-customer" class="btn btn-primary">บันทึก</button>
+                <button type="button" onclick="document.getElementById('customer-modal').classList.add('hidden')" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Modal -->
+    <div id="product-modal" class="modal-backdrop hidden">
+        <div class="glass-panel modal-content max-w-lg">
+            <div class="flex justify-between items-center p-6 border-b border-white/20">
+                <h2 id="product-modal-title" class="text-2xl font-bold">เพิ่มสินค้า</h2>
+                <button class="btn-icon btn-secondary" onclick="document.getElementById('product-modal').classList.add('hidden')">✕</button>
+            </div>
+            <div class="p-6 space-y-4 modal-body">
+                <form id="product-form-modal" class="space-y-4">
+                    <input type="hidden" id="product-id">
+                     <input type="hidden" id="product-image-url-hidden">
+                    <div>
+                        <label for="product-name-modal" class="block mb-2 text-sm font-medium">ชื่อสินค้า</label>
+                        <input type="text" id="product-name-modal" class="input-glass" placeholder="ชื่อสินค้า...">
+                    </div>
+                    <div>
+                        <label for="product-price-modal" class="block mb-2 text-sm font-medium">ราคา</label>
+                        <input type="number" id="product-price-modal" class="input-glass" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label for="product-image-modal" class="block mb-2 text-sm font-medium">รูปภาพ</label>
+                        <input type="file" id="product-image-modal" class="input-glass" accept="image/*">
+                        <div class="mt-4 text-center">
+                            <img id="product-preview" class="rounded-lg max-w-xs mx-auto" alt="Product"/>
+                            <button type="button" id="btn-remove-product-image" class="btn btn-error btn-sm mt-2 hidden">ลบ</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-6 border-t border-white/20 text-right space-x-4">
+                <button type="button" id="btn-save-product" class="btn btn-primary">บันทึก</button>
+                <button type="button" onclick="document.getElementById('product-modal').classList.add('hidden')" class="btn btn-secondary">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Modal -->
+    <div id="view-modal" class="modal-backdrop hidden">
+        <div class="glass-panel modal-content max-w-2xl">
+            <div class="flex justify-between items-center p-6 border-b border-white/20">
+                <h2 id="view-modal-title" class="text-2xl font-bold">ข้อมูล</h2>
+                <button class="btn-icon btn-secondary" onclick="document.getElementById('view-modal').classList.add('hidden')">✕</button>
+            </div>
+            <div id="view-modal-body" class="p-6 space-y-3 modal-body" style="color: var(--text-primary);"></div>
+            <div class="p-6 border-t border-white/20 text-right space-x-4">
+                <button type="button" id="btn-copy-view-data" class="btn btn-secondary">คัดลอก</button>
+                <button type="button" onclick="document.getElementById('view-modal').classList.add('hidden')" class="btn btn-secondary">ปิด</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Modal -->
+    <div id="image-view-modal" class="modal-backdrop hidden" onclick="this.classList.add('hidden')">
+        <img id="image-view-modal-src" class="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl" src="" alt="Image">
+    </div>
+
+    <!-- JavaScript ไฟล์หลัก (อยู่ใน script.js) -->
+    <script src="script.js"></script>
+</body>
+</html>
