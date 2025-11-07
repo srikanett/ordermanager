@@ -2,7 +2,7 @@
 
 // ⚠️ IMPORTANT: เปลี่ยนเป็น URL ของคุณ
 // ตัวอย่าง: https://script.google.com/macros/s/AKfycbwTPamrpFokJCO5n9Is87uaoY2wh9jClS8VSWE8-NsKzHpiV-p2A0GixeLcltya2Ww7/exec
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTPamrpFokJCO5n9Is87uaoY2wh9jClS8VSWE8-NsKzHpiV-p2A0GixeLcltya2Ww7/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3hclau08WNu6gGJ2Zzze-oY2wLoZ6mwUezborW4VeRrGF9kzQYnXFXMNIQxxvfPJJ/exec';
 const APP_URL = window.location.origin + window.location.pathname;
 
 // Global State
