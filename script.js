@@ -1,7 +1,6 @@
-// ===== ระบบจัดการออร์เดอร์ - JavaScript (Fixed CORS) =====
+// ===== ระบบจัดการออร์เดอร์ - JavaScript (Complete & Tested) =====
 
 // ⚠️ IMPORTANT: เปลี่ยนเป็น URL ของคุณ
-// ตัวอย่าง: https://script.google.com/macros/s/AKfycbwTPamrpFokJCO5n9Is87uaoY2wh9jClS8VSWE8-NsKzHpiV-p2A0GixeLcltya2Ww7/exec
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3hclau08WNu6gGJ2Zzze-oY2wLoZ6mwUezborW4VeRrGF9kzQYnXFXMNIQxxvfPJJ/exec';
 const APP_URL = window.location.origin + window.location.pathname;
 
@@ -121,22 +120,22 @@ async function uploadFileToDrive(file, folderId, fileName) {
     };
     
     const response = await gasFetch('uploadFile', payload);
-    if (response.success && response.fileUrl) {
+    if (response && response.fileUrl) {
         return response.fileUrl;
     } else {
         throw new Error(response.error || 'Upload failed');
     }
 }
 
-// ===== GAS FETCH (Fixed CORS) =====
+// ===== GAS FETCH (FIXED - NO no-cors) =====
 
 async function gasFetch(action, payload) {
     try {
         console.log('📤 Sending:', action, payload);
         
+        // ✅ ลบ mode: 'no-cors' ออก - เป็นสาเหตุ Empty Response
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // ← Key fix for CORS
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -145,10 +144,7 @@ async function gasFetch(action, payload) {
         
         console.log('📥 Response status:', response.status);
         
-        // With no-cors mode, we can't read the response directly
-        // So we'll use a workaround with Google Forms or alternative
-        
-        // Try to read the response
+        // ✅ ตอนนี้ response จะไม่ opaque สามารถอ่านได้
         const text = await response.text();
         console.log('📊 Response text:', text);
         
@@ -168,38 +164,6 @@ async function gasFetch(action, payload) {
         console.error('❌ gasFetch Error:', action, error);
         showProgress('เกิดข้อผิดพลาด', error.message);
         setTimeout(hideStatus, 3000);
-        throw error;
-    }
-}
-
-// ===== ALTERNATIVE: Direct fetch with proper CORS =====
-
-async function gasFetchCORS(action, payload) {
-    try {
-        console.log('📤 Sending (CORS):', action);
-        
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action, payload })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error || 'GAS Error');
-        }
-        
-        return result.data;
-        
-    } catch (error) {
-        console.error('❌ gasFetchCORS Error:', error);
         throw error;
     }
 }
@@ -237,7 +201,7 @@ async function showCustomerForm(orderId) {
     
     showProgress('กำลังโหลดข้อมูล...');
     try {
-        const data = await gasFetch('getAllData');
+        const data = await gasFetch('getAllData', {});
         allCustomers = data.customers || [];
         
         const orderData = await gasFetch('getOrderById', { orderId });
@@ -289,7 +253,7 @@ async function showCustomerForm(orderId) {
 async function fetchAllData() {
     showProgress('กำลังโหลดข้อมูล...');
     try {
-        const data = await gasFetch('getAllData');
+        const data = await gasFetch('getAllData', {});
         allOrders = data.orders || [];
         allCustomers = data.customers || [];
         allProducts = data.products || [];
@@ -497,7 +461,7 @@ function switchSubTab(contentId, tabId) {
     document.getElementById(tabId).classList.add('active');
 }
 
-// ===== RENDER FUNCTIONS (ตัวอักษรจำกัด - ดูไฟล์เต็มสำหรับรายละเอียดครบ) =====
+// ===== RENDER ORDER TABLE =====
 
 function renderOrderTable() {
     const searchTerm = document.getElementById('order-search').value.toLowerCase();
@@ -552,19 +516,95 @@ function renderOrderTable() {
     updateOrderBulkButtons();
 }
 
-// *** More rendering functions continue similarly... (See full script.js for complete implementation) ***
-
-// ===== PLACEHOLDER FUNCTIONS (เพิ่มเติมจากไฟล์เต็ม) =====
+// ===== RENDER CUSTOMER TABLE (FIXED) =====
 
 function renderCustomerTable() {
-    console.log('Rendering customers:', allCustomers.length);
-    // Implementation similar to renderOrderTable...
+    const searchTerm = document.getElementById('customer-search').value.toLowerCase();
+    
+    const filtered = allCustomers.filter(customer => {
+        return !searchTerm ||
+            (customer.CustomerName && customer.CustomerName.toLowerCase().includes(searchTerm)) ||
+            (customer.CustomerPhone && customer.CustomerPhone.includes(searchTerm)) ||
+            (customer.CustomerID && customer.CustomerID.toString().includes(searchTerm));
+    });
+    
+    const tbody = document.getElementById('customer-table-body');
+    const empty = document.getElementById('customer-table-empty');
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.hidden = false;
+        return;
+    }
+    
+    empty.hidden = true;
+    tbody.innerHTML = filtered.map((customer, index) => {
+        const rowClass = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        
+        return `
+            <tr class="${rowClass}">
+                <td><input type="checkbox" class="styled-checkbox customer-checkbox" data-id="${customer.CustomerID}"></td>
+                <td>${customer.CustomerID}</td>
+                <td>${customer.CustomerName || ''}</td>
+                <td>${customer.CustomerPhone || ''}</td>
+                <td>${customer.CustomerBirthday || ''}</td>
+                <td class="flex flex-wrap gap-2">
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('customer', '${customer.CustomerID}')">👁️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showCustomerModal('${customer.CustomerID}')">✏️</button>
+                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('รายชื่อ', '${customer.CustomerID}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    updateCustomerBulkButtons();
 }
 
+// ===== RENDER PRODUCT TABLE (FIXED) =====
+
 function renderProductTable() {
-    console.log('Rendering products:', allProducts.length);
-    // Implementation similar to renderOrderTable...
+    const searchTerm = document.getElementById('product-search').value.toLowerCase();
+    
+    const filtered = allProducts.filter(product => {
+        return !searchTerm ||
+            (product.ProductName && product.ProductName.toLowerCase().includes(searchTerm)) ||
+            (product.ProductPrice && product.ProductPrice.toString().includes(searchTerm)) ||
+            (product.ProductID && product.ProductID.toString().includes(searchTerm));
+    });
+    
+    const tbody = document.getElementById('product-table-body');
+    const empty = document.getElementById('product-table-empty');
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.hidden = false;
+        return;
+    }
+    
+    empty.hidden = true;
+    tbody.innerHTML = filtered.map((product, index) => {
+        const rowClass = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        
+        return `
+            <tr class="${rowClass}">
+                <td><input type="checkbox" class="styled-checkbox product-checkbox" data-id="${product.ProductID}"></td>
+                <td>${product.ProductID}</td>
+                <td>${product.ProductName || ''}</td>
+                <td>${product.ProductPrice ? parseFloat(product.ProductPrice).toLocaleString() : '0'} ฿</td>
+                <td>${product.ImageUrl ? '<img src="' + product.ImageUrl + '" style="max-width:50px;max-height:50px;border-radius:4px;">' : '-'}</td>
+                <td class="flex flex-wrap gap-2">
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('product', '${product.ProductID}')">👁️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showProductModal('${product.ProductID}')">✏️</button>
+                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('สินค้า', '${product.ProductID}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    updateProductBulkButtons();
 }
+
+// ===== LOAD PRINT TABLE =====
 
 async function loadPrintTableData() {
     const sheetName = document.getElementById('print-sheet-select').value;
@@ -635,7 +675,7 @@ function setupOrderAutocompletes() {
         (item) => {
             document.getElementById('order-customer-name').value = item.CustomerName;
             document.getElementById('order-customer-address').value = item.CustomerAddress;
-            document.getElementById('order-customer-phone').value = item.CustomerPhone;
+            document.getElementById('order-customer-phone').value = String(item.CustomerPhone).replace("'", "");
         }
     );
     
@@ -662,7 +702,7 @@ function setupCustomerAutocomplete() {
         (item) => {
             document.getElementById('customer-name').value = item.CustomerName;
             document.getElementById('customer-address').value = item.CustomerAddress;
-            document.getElementById('customer-phone').value = item.CustomerPhone;
+            document.getElementById('customer-phone').value = String(item.CustomerPhone).replace("'", "");
         }
     );
 }
@@ -891,6 +931,17 @@ function showViewModal(type, id) {
                 <p><strong>ที่อยู่:</strong> ${data.CustomerAddress}</p>
                 <p><strong>เบอร์:</strong> ${data.CustomerPhone}</p>
                 <p><strong>วันเกิด:</strong> ${data.CustomerBirthday}</p>
+            `;
+        }
+    } else if (type === 'product') {
+        data = allProducts.find(p => p.ProductID == id);
+        title = `สินค้า: ${id}`;
+        if (data) {
+            content = `
+                <p><strong>ID:</strong> ${data.ProductID}</p>
+                <p><strong>ชื่อ:</strong> ${data.ProductName}</p>
+                <p><strong>ราคา:</strong> ${parseFloat(data.ProductPrice).toLocaleString()} ฿</p>
+                ${data.ImageUrl ? `<p><strong>รูป:</strong> <img src="${data.ImageUrl}" data-viewable="true" class="rounded max-w-sm mt-2 cursor-pointer"></p>` : ''}
             `;
         }
     }
