@@ -1,7 +1,7 @@
 // ===== ระบบจัดการออร์เดอร์ - JavaScript (Complete & Tested) =====
 
 // ⚠️ IMPORTANT: เปลี่ยนเป็น URL ของคุณ
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlKorS2Kh5ohqIZeSm-NVic-T3Po5HpWVKNAtDRIDwZLPFGxzWEbfHkRc-aS2Eef5b/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3hclau08WNu6gGJ2Zzze-oY2wLoZ6mwUezborW4VeRrGF9kzQYnXFXMNIQxxvfPJJ/exec';
 const APP_URL = window.location.origin + window.location.pathname;
 
 // Global State
@@ -64,10 +64,11 @@ function generateOrderId() {
     const year = (now.getFullYear() + 543).toString().slice(-2);
     
     const prefix = `${year}${month}${day}`;
-    const todayOrders = allOrders.filter(o => o.OrderID && o.OrderID.startsWith(prefix));
+    // ✅ แปลง OrderID เป็น string ก่อน
+    const todayOrders = allOrders.filter(o => o.OrderID && String(o.OrderID).startsWith(prefix));
     let maxSuffix = 0;
     todayOrders.forEach(o => {
-        const suffix = parseInt(o.OrderID.slice(-3), 10);
+        const suffix = parseInt(String(o.OrderID).slice(-3), 10);
         if (suffix > maxSuffix) maxSuffix = suffix;
     });
     const newSuffix = String(maxSuffix + 1).padStart(3, '0');
@@ -464,10 +465,11 @@ function renderOrderTable() {
     const status = document.getElementById('order-status-filter').value;
     
     const filtered = allOrders.filter(order => {
+        // ✅ แปลง OrderID เป็น string
         const matchesSearch = !searchTerm ||
-            (order.OrderID && order.OrderID.includes(searchTerm)) ||
+            (order.OrderID && String(order.OrderID).includes(searchTerm)) ||
             (order.CustomerName && order.CustomerName.toLowerCase().includes(searchTerm)) ||
-            (order.CustomerPhone && order.CustomerPhone.includes(searchTerm));
+            (order.CustomerPhone && String(order.CustomerPhone).includes(searchTerm));
         
         const matchesStatus = (status === 'all') || (order.Status === status);
         return matchesSearch && matchesStatus;
@@ -492,18 +494,20 @@ function renderOrderTable() {
             'สำเร็จ': '#4CAF50'
         };
         const statusTextColor = (order.Status === 'รอจัดส่ง' || order.Status === 'สำเร็จ') ? '#333' : 'white';
+        // ✅ แปลง OrderID เป็น string
+        const orderId = String(order.OrderID);
         
         return `
             <tr class="${rowClass}">
-                <td><input type="checkbox" class="styled-checkbox order-checkbox" data-id="${order.OrderID}"></td>
-                <td>${order.OrderID}</td>
+                <td><input type="checkbox" class="styled-checkbox order-checkbox" data-id="${orderId}"></td>
+                <td>${orderId}</td>
                 <td>${order.CustomerName || ''}</td>
                 <td>${order.TotalPrice ? parseFloat(order.TotalPrice).toLocaleString() : '0'}</td>
                 <td><span class="px-2 py-1 rounded text-xs font-semibold" style="background: ${statusColors[order.Status] || '#888'}; color: ${statusTextColor};">${order.Status}</span></td>
                 <td class="flex flex-wrap gap-2">
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('order', '${order.OrderID}')">👁️</button>
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showOrderModal('${order.OrderID}')">✏️</button>
-                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('order', '${order.OrderID}')">🗑️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('order', '${orderId}')">👁️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showOrderModal('${orderId}')">✏️</button>
+                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('order', '${orderId}')">🗑️</button>
                 </td>
             </tr>
         `;
@@ -536,18 +540,20 @@ function renderCustomerTable() {
     empty.hidden = true;
     tbody.innerHTML = filtered.map((customer, index) => {
         const rowClass = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        // ✅ แปลง CustomerID เป็น string
+        const customerId = String(customer.CustomerID);
         
         return `
             <tr class="${rowClass}">
-                <td><input type="checkbox" class="styled-checkbox customer-checkbox" data-id="${customer.CustomerID}"></td>
-                <td>${customer.CustomerID}</td>
+                <td><input type="checkbox" class="styled-checkbox customer-checkbox" data-id="${customerId}"></td>
+                <td>${customerId}</td>
                 <td>${customer.CustomerName || ''}</td>
                 <td>${customer.CustomerPhone || ''}</td>
                 <td>${customer.CustomerBirthday || ''}</td>
                 <td class="flex flex-wrap gap-2">
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('customer', '${customer.CustomerID}')">👁️</button>
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showCustomerModal('${customer.CustomerID}')">✏️</button>
-                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('รายชื่อ', '${customer.CustomerID}')">🗑️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('customer', '${customerId}')">👁️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showCustomerModal('${customerId}')">✏️</button>
+                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('รายชื่อ', '${customerId}')">🗑️</button>
                 </td>
             </tr>
         `;
@@ -580,18 +586,20 @@ function renderProductTable() {
     empty.hidden = true;
     tbody.innerHTML = filtered.map((product, index) => {
         const rowClass = index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
+        // ✅ แปลง ProductID เป็น string
+        const productId = String(product.ProductID);
         
         return `
             <tr class="${rowClass}">
-                <td><input type="checkbox" class="styled-checkbox product-checkbox" data-id="${product.ProductID}"></td>
-                <td>${product.ProductID}</td>
+                <td><input type="checkbox" class="styled-checkbox product-checkbox" data-id="${productId}"></td>
+                <td>${productId}</td>
                 <td>${product.ProductName || ''}</td>
                 <td>${product.ProductPrice ? parseFloat(product.ProductPrice).toLocaleString() : '0'} ฿</td>
                 <td>${product.ImageUrl ? '<img src="' + product.ImageUrl + '" style="max-width:50px;max-height:50px;border-radius:4px;">' : '-'}</td>
                 <td class="flex flex-wrap gap-2">
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('product', '${product.ProductID}')">👁️</button>
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showProductModal('${product.ProductID}')">✏️</button>
-                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('สินค้า', '${product.ProductID}')">🗑️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('product', '${productId}')">👁️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showProductModal('${productId}')">✏️</button>
+                    <button class="btn btn-error btn-icon btn-sm" onclick="deleteSingleItem('สินค้า', '${productId}')">🗑️</button>
                 </td>
             </tr>
         `;
@@ -625,6 +633,7 @@ function renderPrintTable() {
     const status = document.getElementById('print-status-filter').value;
     
     const filtered = currentOrderData.filter(item => {
+        // ✅ แปลง OrderID เป็น string
         const matchesType = (dataType === 'all') || (dataType === 'orderOnly' && item.OrderID);
         const matchesStatus = (status === 'all') || (item.Status === status);
         return matchesType && matchesStatus;
@@ -646,14 +655,14 @@ function renderPrintTable() {
         
         return `
             <tr class="${i % 2 === 0 ? 'table-row-light' : 'table-row-dark'}">
-                <td><input type="checkbox" class="styled-checkbox print-checkbox" data-id="${id}"></td>
+                <td><input type="checkbox" class="styled-checkbox print-checkbox" data-id="${String(id)}"></td>
                 <td>${id}</td>
                 <td>${item.CustomerName}</td>
                 <td>${parseFloat(item.TotalPrice).toLocaleString()}</td>
                 <td><span class="px-2 py-1 rounded text-xs">${type}</span></td>
                 <td class="flex gap-2">
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('printItem', '${id}')">👁️</button>
-                    <button class="btn btn-secondary btn-icon btn-sm" onclick="promptPrintChoice(['${id}'])">🖨️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="showViewModal('printItem', '${String(id)}')">👁️</button>
+                    <button class="btn btn-secondary btn-icon btn-sm" onclick="promptPrintChoice(['${String(id)}'])">🖨️</button>
                 </td>
             </tr>
         `;
@@ -791,7 +800,8 @@ async function showOrderModal(orderId) {
     
     if (orderId) {
         document.getElementById('order-modal-title').textContent = `แก้ไข: ${orderId}`;
-        const order = allOrders.find(o => o.OrderID === orderId);
+        // ✅ แปลง orderId เป็น string เพื่อเทียบ
+        const order = allOrders.find(o => String(o.OrderID) === String(orderId));
         if (!order) {
             showToast('error', 'ไม่พบออร์เดอร์');
             return;
@@ -841,7 +851,8 @@ function showCustomerModal(customerId) {
     
     if (customerId) {
         document.getElementById('customer-modal-title').textContent = `แก้ไข: ${customerId}`;
-        const customer = allCustomers.find(c => c.CustomerID == customerId);
+        // ✅ แปลง customerId เป็น string เพื่อเทียบ
+        const customer = allCustomers.find(c => String(c.CustomerID) === String(customerId));
         if (!customer) {
             showToast('error', 'ไม่พบลูกค้า');
             return;
@@ -869,7 +880,8 @@ function showProductModal(productId) {
     
     if (productId) {
         document.getElementById('product-modal-title').textContent = `แก้ไข: ${productId}`;
-        const product = allProducts.find(p => p.ProductID == productId);
+        // ✅ แปลง productId เป็น string เพื่อเทียบ
+        const product = allProducts.find(p => String(p.ProductID) === String(productId));
         if (!product) {
             showToast('error', 'ไม่พบสินค้า');
             return;
@@ -895,7 +907,8 @@ function showViewModal(type, id) {
     let data, title, content = '';
     
     if (type === 'order') {
-        data = allOrders.find(o => o.OrderID === id);
+        // ✅ แปลง id เป็น string เพื่อเทียบ
+        data = allOrders.find(o => String(o.OrderID) === String(id));
         title = `ออร์เดอร์: ${id}`;
         if (data) {
             content = `
@@ -918,7 +931,7 @@ function showViewModal(type, id) {
             `;
         }
     } else if (type === 'customer') {
-        data = allCustomers.find(c => c.CustomerID == id);
+        data = allCustomers.find(c => String(c.CustomerID) === String(id));
         title = `ลูกค้า: ${id}`;
         if (data) {
             content = `
@@ -930,7 +943,7 @@ function showViewModal(type, id) {
             `;
         }
     } else if (type === 'product') {
-        data = allProducts.find(p => p.ProductID == id);
+        data = allProducts.find(p => String(p.ProductID) === String(id));
         title = `สินค้า: ${id}`;
         if (data) {
             content = `
@@ -1098,13 +1111,16 @@ async function submitCustomerOrder(e) {
 
 function getSelectedIds(tbodyId, checkboxClass) {
     const checkboxes = document.getElementById(tbodyId).querySelectorAll(`.${checkboxClass}:checked`);
-    return Array.from(checkboxes).map(cb => cb.dataset.id);
+    // ✅ แปลง id เป็น string
+    return Array.from(checkboxes).map(cb => String(cb.dataset.id));
 }
 
 async function deleteSingleItem(sheetName, id) {
+    // ✅ แปลง id เป็น string
+    const strId = String(id);
     const result = await Swal.fire({
         title: 'แน่ใจ?',
-        text: `ลบ ${id}`,
+        text: `ลบ ${strId}`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'ลบ',
@@ -1112,7 +1128,7 @@ async function deleteSingleItem(sheetName, id) {
     });
     
     if (result.isConfirmed) {
-        performDelete(sheetName, [id]);
+        performDelete(sheetName, [strId]);
     }
 }
 
@@ -1262,8 +1278,9 @@ function promptPrintChoice(ids) {
 }
 
 function printLabels(ids, format) {
+    // ✅ แปลง ids เป็น string ก่อนค้นหา
     const ordersToPrint = ids.map(id => 
-        currentOrderData.find(o => o.OrderID === id || o.No == id)
+        currentOrderData.find(o => String(o.OrderID) === String(id) || String(o.No) === String(id))
     ).filter(Boolean);
     
     let htmlContent = format === 'A6' ? generateA6Html(ordersToPrint) : generate100x75Html(ordersToPrint);
